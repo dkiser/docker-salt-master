@@ -2,6 +2,8 @@
 
 A Docker image which allows you to run a containerized Salt-Master server with an optional [Multi-Master-PKI](http://docs.saltstack.com/en/latest/topics/tutorials/multimaster_pki.html) setup.
 
+>NOTE: salt master config must have ```user: salt``` as this container runs unprivileged!
+
 ## Running the Container
 
 You can easily run the container like so:
@@ -39,7 +41,7 @@ This will create a stopped container wwith the name of `salt-master-data` and
 will hold our persistent salt master data. Now we just need to run our master
 container with the `--volumes-from` command:
 
-    docker run --rm -it --volume-from salt-master-data dkiser/salt-master
+    docker run --rm -it --volumes-from salt-master-data dkiser/salt-master
 
 ### Sharing Local Folders
 
@@ -92,3 +94,81 @@ Once installed run:
     $ docker exec salt-master /bin/bash
     $ salt '*' test.ping
     $ salt '*' grains.items
+
+## Example
+
+> Note: If on OSX, the temp path must be in /Users somehwere (boot2docker limitation)
+
+### Config/Launch salt-master
+1. Create a directory to stage an example data set to seed the salt-master with via volumes.
+```bash
+mkdir -p /tmp/salt_test/master/etc/salt
+export SALT_DEV_MASTER=/tmp/salt_test/master
+```
+2. Create a minimal master config file.
+```bash
+echo "user: salt" > $SALT_DEV_MASTER/etc/salt/master
+```
+3. Chown the host container volume contents for the uid:gid of salt in the container.
+```bash
+sudo chown -R 999:999 $SALT_DEV_MASTER/etc/salt
+```
+4. Create the data only container with volume mapping to seed our salt-master container.
+```bash
+docker run -it -v $SALT_DEV_MASTER/etc/salt:/etc/salt --name salt-master-data busybox /bin/true
+```
+5. Run the salt-master container with our volumes.
+```bash
+docker run --rm -it --name salt-master --volumes-from salt-master-data -e LOG_LEVEL=debug -p 4505:4505 -p 4506:4506 dkiser/salt-master
+```
+
+### Config/Launch salt-minion
+1. Create a directory to stage an example data set to seed the salt-minion with via volumes.
+```bash
+mkdir -p /tmp/salt_test/minion/etc/salt
+export SALT_DEV_MINION=/tmp/salt_test/minion
+```
+2. Create a minimal minion config file (adjust master IP/hotname accordingly, example is a boot2docker ip)
+```bash
+echo "user: salt" > $SALT_DEV_MINION/etc/salt/minion
+echo "master: 192.168.59.103" >> $SALT_DEV_MINION/etc/salt/minion
+```
+3. Chown the host container volume contents for the uid:gid of salt in the container.
+```bash
+sudo chown -R 999:999 $SALT_DEV_MINION/etc/salt
+```
+4. Create the data only container with volume mapping to seed our salt-minion container.
+```bash
+docker run -it -v $SALT_DEV_MINION/etc/salt:/etc/salt --name salt-minion-data busybox /bin/true
+```
+5. Run the salt-minion container with our volumes.
+```bash
+docker run --rm -it --name salt-minion --volumes-from salt-minion-data -e LOG_LEVEL=debug dkiser/salt-minion
+```
+
+### Accept keys on salt-master
+1. ```docker exec -it salt-master /bin/bash```
+2. Check to see if minion talked to master yet
+```bash
+$ salt-key -L
+Accepted Keys:
+Denied Keys:
+Unaccepted Keys:
+78e1a9c58485
+Rejected Keys:
+```
+3. Accept the Key
+```bash
+$ salt-key -A
+The following keys are going to be accepted:
+Unaccepted Keys:
+78e1a9c58485
+Proceed? [n/Y] y
+Key for minion 78e1a9c58485 accepted.
+```
+4. Test communication
+```bash
+$ salt '*' test.ping
+78e1a9c58485:
+    True
+```
