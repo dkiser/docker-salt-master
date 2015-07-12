@@ -23,7 +23,7 @@ RUN echo "create salt user and directories" \
       /var/run/salt \
       /home/salt
 
-ENV SALT_VERSION 2015.5.1
+ENV SALT_VERSION 2015.5.3
 ENV LOG_LEVEL error
 
 # Yum updates and installs
