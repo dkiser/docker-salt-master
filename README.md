@@ -71,10 +71,10 @@ If you are using OSX boot2docker, there is an issue where the VirtualBox '''vbox
 /Users [boot2dockerip]
 ```
 3. ```sudo nfsd update``` on the OSX host
-3. ```boot2docker ssh``` to ssh into the boot2docker vm
-4. ```sudo umount /Users```
-5. ```sudo /usr/local/etc/init.d/nfs-client start```
-6. ```sudo mount 192.168.59.3:/Users /Users -o  rw,async,noatime,rsize=32768,wsize=32768,proto=tcp```
+4. ```boot2docker ssh``` to ssh into the boot2docker vm
+5. ```sudo umount /Users```
+6. ```sudo /usr/local/etc/init.d/nfs-client start```
+7. ```sudo mount 192.168.59.3:/Users /Users -o  rw,async,noatime,rsize=32768,wsize=32768,proto=tcp```
 
 ## Ports
 
